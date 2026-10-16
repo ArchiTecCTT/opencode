@@ -331,6 +331,7 @@ describe("config plugin reloads", () => {
   it.live("publishes catalog updates on boot and real changes but skips unchanged reloads", () =>
     Effect.gen(function* () {
       const bus = yield* Bus.Service
+      const integrations = yield* Integration.Service
       const plugins = yield* Plugin.Service
       const websearch = yield* WebSearch.Service
       const baseHost = yield* PluginHost.make(plugins)
@@ -342,6 +343,8 @@ describe("config plugin reloads", () => {
         Reference.Event.Updated.type,
         WebSearch.Event.Updated.type,
         Integration.Event.Updated.type,
+        Credential.Event.Updated.type,
+        Credential.Event.Switched.type,
       ])
       const counts = new Map<string, number>()
       const reloads = { agent: 0, command: 0, skill: 0, reference: 0, websearch: 0, integration: 0 }
@@ -424,9 +427,19 @@ describe("config plugin reloads", () => {
       )
       expect(Object.fromEntries(counts)).toEqual({})
 
-      yield* test.setEntries([config("second")])
-      providerName = "Second search"
-      yield* host.websearch.reload()
+      yield* integrations.connection.key({
+        integrationID: Integration.ID.make("first"),
+        key: "sk-test",
+        label: "Work",
+      })
+      const connected = yield* integrations.get(Integration.ID.make("first"))
+      expect(connected?.connections).toMatchObject([{ type: "credential", label: "Work", method: "key" }])
+      expect(Object.fromEntries(counts)).toEqual({
+        [Credential.Event.Updated.type]: 1,
+        [Credential.Event.Switched.type]: 1,
+      })
+
+      counts.clear()
       yield* bus.publish(Event.Updated, {})
       yield* waitUntil(
         Effect.sync(
@@ -435,8 +448,25 @@ describe("config plugin reloads", () => {
             reloads.command === 2 &&
             reloads.skill === 4 &&
             reloads.reference === 2 &&
-            reloads.websearch === 3 &&
+            reloads.websearch === 2 &&
             reloads.integration === 2,
+        ),
+      )
+      expect(Object.fromEntries(counts)).toEqual({})
+
+      yield* test.setEntries([config("second")])
+      providerName = "Second search"
+      yield* host.websearch.reload()
+      yield* bus.publish(Event.Updated, {})
+      yield* waitUntil(
+        Effect.sync(
+          () =>
+            reloads.agent === 3 &&
+            reloads.command === 3 &&
+            reloads.skill === 6 &&
+            reloads.reference === 3 &&
+            reloads.websearch === 4 &&
+            reloads.integration === 3,
         ),
       )
       expect(Object.fromEntries(counts)).toEqual({

@@ -1,5 +1,6 @@
 export * as State from "./state.js"
 
+import { createHash } from "node:crypto"
 import { Cause, Context, Effect, Exit, Fiber, Scope } from "effect"
 
 /**
@@ -135,10 +136,12 @@ export function changes<State>(
   project: (state: State) => unknown,
   notify: (state: State) => Effect.Effect<void>,
 ): (state: State) => Effect.Effect<void> {
-  let published: bigint | number | undefined
+  let published: string | undefined
   return (state) =>
     Effect.suspend(() => {
-      const next = Bun.hash(JSON.stringify(project(state)) ?? "")
+      const next = createHash("sha1")
+        .update(JSON.stringify(project(state)) ?? "")
+        .digest("hex")
       if (next === published) return Effect.void
       published = next
       return notify(state)
