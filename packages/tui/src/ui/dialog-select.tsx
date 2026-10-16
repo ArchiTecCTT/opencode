@@ -257,8 +257,10 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const limit = createMemo(() => Math.floor(dimensions().height / 2) - 6)
   // Under new designs an overflowing list gives its last row to a "…" indicator.
   const overflows = createMemo(() => newDesigns() && rows() > limit())
-  const height = createMemo(() => Math.min(rows(), limit()) - (overflows() ? 1 : 0))
   const [moreBelow, setMoreBelow] = createSignal(false)
+  // At the bottom of the list the "…" row hands its row back to the list, so the dialog keeps its height.
+  const ellipsis = () => overflows() && moreBelow()
+  const height = createMemo(() => Math.min(rows(), limit()) - (ellipsis() ? 1 : 0))
   function updateMoreBelow() {
     if (!scroll || scroll.isDestroyed) return
     setMoreBelow(scroll.scrollTop + scroll.viewport.height < scroll.scrollHeight)
@@ -813,9 +815,9 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
               )}
             </For>
           </scrollbox>
-          <Show when={overflows()}>
+          <Show when={ellipsis()}>
             <box paddingLeft={DIALOG_LIST_INSET} flexShrink={0}>
-              <text fg={theme.text.faint}>{moreBelow() ? "…" : " "}</text>
+              <text fg={theme.text.faint}>…</text>
             </box>
           </Show>
           {/* Reserved whenever any option has a detail, so the dialog does not resize as the selection moves. */}
