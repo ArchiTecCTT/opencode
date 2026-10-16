@@ -1,4 +1,5 @@
 import type { ProgramStatus, ProgramStatusKind } from "@opentui/core"
+import { createHash } from "node:crypto"
 import { createEffect, onCleanup } from "solid-js"
 
 export type PendingSession = { id: string; title?: string } & (
@@ -44,7 +45,10 @@ export function createProgramStatus(input: {
 export function programStatusReports(sessions: PendingSession[]) {
   return new Map<string, ProgramStatus>([
     [ROOT, root(sessions)],
-    ...sessions.map((session): [string, ProgramStatus] => [session.id, record(session, session.id)]),
+    ...sessions.map((session): [string, ProgramStatus] => {
+      const id = recordID(session.id)
+      return [id, record(session, id)]
+    }),
   ])
 }
 
@@ -68,6 +72,12 @@ function record(session: PendingSession, id?: string): ProgramStatus {
   const title = clip(session.title, 192)
   if (session.state === "working") return { state: "working", id, app: APP, title }
   return { state: "blocked", kind: session.kind, id, app: APP, title, message: clip(session.message, 2048) }
+}
+
+// Record IDs must be 1-32 bytes of [A-Za-z0-9_.+-], but Session IDs only need a "ses" prefix.
+function recordID(id: string) {
+  if (/^[\w.+-]{1,32}$/.test(id)) return id
+  return `ses_${createHash("sha256").update(id).digest("hex").slice(0, 16)}`
 }
 
 // Records reject control characters and oversized fields, so normalize to one line within the byte limit.
