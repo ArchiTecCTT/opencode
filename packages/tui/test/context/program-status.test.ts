@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import type { ProgramStatus } from "@opentui/core"
 import { createRoot, createSignal } from "solid-js"
-import { createProgramStatus, type PendingSession } from "../../src/context/program-status"
+import { createProgramStatus, programStatusReports, type PendingSession } from "../../src/context/program-status"
 
 function setup(initial: PendingSession[] = []) {
   return createRoot((dispose) => {
@@ -54,6 +54,14 @@ test("summarizes several pending sessions and clears resolved ones", () => {
 
   status.dispose()
   expect(status.reports).toEqual([{ state: "clear" }])
+})
+
+test("keeps record IDs within the protocol's name rules", () => {
+  const ids = ["ses_a", `ses_panel_${"f".repeat(36)}`, "ses with spaces"]
+  const records = programStatusReports(ids.map((id) => ({ id, state: "working" })))
+  expect([...records.keys()].slice(1).map((id) => /^[\w.+-]{1,32}$/.test(id))).toEqual([true, true, true])
+  expect(records.has("ses_a")).toBe(true)
+  expect(records.size).toBe(4)
 })
 
 test("clips long titles to the protocol byte limit", () => {
