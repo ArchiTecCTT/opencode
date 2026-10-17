@@ -57,8 +57,10 @@ Set `model` to a model whose endpoint is `/openai/v1/responses` in the [Console]
 codex --model grok-4.7
 ```
 
-For Claude, Gemini, and open models, use a harness that picks the API per model, such as [Pi](/console/harnesses/pi)
-or [Hermes](/console/harnesses/hermes).
+Claude, Gemini, and open models are not available in Codex yet. Use [Pi](/console/harnesses/pi) or
+[Hermes](/console/harnesses/hermes) for them in the meantime.
+
+<Callout>Support for every model in every harness is coming soon.</Callout>
 
 Codex doesn't know the context window or reasoning settings of models outside its own catalog. It uses generic defaults
 for them and prints a warning, which you can ignore.

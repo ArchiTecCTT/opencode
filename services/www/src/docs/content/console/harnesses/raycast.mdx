@@ -44,7 +44,10 @@ providers:
 ```
 
 Raycast appends `/chat/completions` to the base URL, so add models whose endpoint is `/openai/v1/chat/completions` in
-the [Go](/console/go#endpoints) table, such as Kimi, GLM, DeepSeek, and MiMo.
+the [Go](/console/go#endpoints) table, such as Kimi, GLM, DeepSeek, and MiMo. Go models served through other APIs, such as
+GPT, Claude, and Gemini, are not available in Raycast yet.
+
+<Callout>Support for every model in every harness is coming soon.</Callout>
 
 Raycast reloads the file when it changes. The file is not synced, so add it on each machine.
 
