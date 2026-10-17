@@ -3,13 +3,13 @@ title: "Raycast"
 description: "Use Console and Go models in Raycast AI."
 ---
 
-Use Console models in Raycast AI Chat, Quick AI, and AI Commands. Pay-as-you-go uses the OpenCode extension, and Go uses
-a custom provider. Both require [Raycast Pro](https://www.raycast.com/pro).
+Use Console and Go models in Raycast AI Chat, Quick AI, and AI Commands through the
+[OpenCode extension](https://www.raycast.com/vimtor/opencode). Models provided by extensions require
+[Raycast Pro](https://www.raycast.com/pro).
 
-## Pay-as-you-go
+## Configure
 
-The [OpenCode extension](https://www.raycast.com/vimtor/opencode) loads the models enabled in your workspace and bills
-them to it.
+The extension loads the models enabled in your workspace and bills them to it.
 
 1. Install the extension from the Raycast Store.
 2. Create a key under **Keys** in the [Console](https://opencode.ai/console) and paste it into the extension's
@@ -24,47 +24,8 @@ Refresh Models
 
 ## Go
 
-Add Go as a custom provider. Open **Settings** > **AI** > **Models & Providers** and click **Reveal Providers Config**,
-then create `providers.yaml` next to the template.
-
-```yaml title="~/.config/raycast/ai/providers.yaml"
-providers:
-  - id: opencode-go
-    name: OpenCode Go
-    base_url: https://opencode.ai/inference/go/openai/v1
-    api_keys:
-      opencode-go: oc_sk_...
-    models:
-      - id: kimi-k3
-        name: Kimi K3
-        context: 1048576
-      - id: glm-5.3
-        name: GLM-5.3
-        context: 1000000
-```
-
-Raycast appends `/chat/completions` to the base URL, so add models whose endpoint is `/openai/v1/chat/completions` in
-the [Go](/console/go#endpoints) table, such as Kimi, GLM, DeepSeek, and MiMo. Go models served through other APIs, such as
-GPT, Claude, and Gemini, are not available in Raycast yet.
-
-<Callout>Support for every model in every harness is coming soon.</Callout>
-
-Raycast reloads the file when it changes. The file is not synced, so add it on each machine.
-
-### Abilities
-
-Raycast assumes custom models don't support tools or images. Turn them on per model when the model supports them.
-
-```yaml title="~/.config/raycast/ai/providers.yaml"
-models:
-  - id: kimi-k3
-    name: Kimi K3
-    abilities:
-      tools:
-        supported: true
-      vision:
-        supported: true
-```
+Use a key from a workspace with a [Go](/console/go) subscription. The extension then lists the Go models in the model
+picker.
 
 ## Console MCP
 
