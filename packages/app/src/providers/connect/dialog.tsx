@@ -81,7 +81,7 @@ export const DialogConnectProvider: Component<{
   /** Connects at the server's default Location instead of the current route's directory. */
   defaultLocation?: boolean
   controller?: ReturnType<typeof useProviderConnectController>
-  /** Opened for one provider from another flow: no way back to the provider list, and the dialog wraps its content. */
+  /** Opened for one provider from another flow, with no way back to the provider list. */
   standalone?: boolean
   selection?: ModelSelection
   onDone?: () => void
@@ -167,16 +167,14 @@ export const DialogConnectProvider: Component<{
   return (
     <Dialog
       preventBackdropDismiss={state.authorization}
-      containerClass={
+      // The top edge stays where the provider list puts it, so a step that fits its content only moves the bottom edge.
+      containerClass={`!self-start [--connect-top:max(8px,calc((100vh_-_512px)/2))] !mt-[var(--connect-top)] !w-[min(calc(100vw_-_16px),640px)] ${
         state.modelProvider
-          ? "!h-[min(calc(100vh_-_16px),560px)] !w-[min(calc(100vw_-_16px),640px)]"
-          : consoleSelected() && state.authorization
-            ? "!h-auto !max-h-[min(calc(100vh_-_16px),560px)] !w-[min(calc(100vw_-_16px),640px)]"
-            : props.standalone
-              ? // The floor is the API key step's height, so switching between it and the intro doesn't jump.
-                "!h-auto !min-h-[min(calc(100vh_-_16px),252px)] !max-h-[min(calc(100vh_-_16px),560px)] !w-[min(calc(100vw_-_16px),640px)]"
-              : "!h-[min(calc(100vh_-_16px),512px)] !w-[min(calc(100vw_-_16px),640px)]"
-      }
+          ? "!h-[min(calc(100vh_-_8px_-_var(--connect-top)),560px)]"
+          : controller.selected()
+            ? "!h-auto !max-h-[min(calc(100vh_-_8px_-_var(--connect-top)),560px)]"
+            : "!h-[min(calc(100vh_-_16px),512px)]"
+      }`}
       onCloseAutoFocus={(event) => {
         if (state.completed && props.onDone) {
           event.preventDefault()
