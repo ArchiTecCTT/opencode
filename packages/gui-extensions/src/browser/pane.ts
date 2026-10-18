@@ -5,12 +5,14 @@ import { SessionID } from "@opencode/schema/session-id"
 import electron, { type BrowserWindow } from "electron"
 import { Deferred, Effect, ManagedRuntime, Queue, Schedule, Schema, Stream } from "effect"
 import { HttpClient, HttpClientRequest } from "effect/http"
+import type { KeyChord } from "../sdk"
 import type { Embeds, Persisted, ServerEndpoints, Storage, Windows } from "../sdk/main"
 import { createBrowserPage, type BrowserPage, type Shared } from "./chromium"
 import { browserFailure } from "./errors"
 import { createBrowserNetwork, type BrowserNetwork } from "./network"
 import { destinationOrigin, fileURLWithin, refusal } from "./policy"
 import { createRefs } from "./refs"
+import { appShortcut } from "./shortcuts"
 import type { PaneEvent } from "./ipc"
 import { createBrowserRestoreStore } from "./restore"
 
@@ -48,6 +50,8 @@ export function createBrowserPane(input: {
   /** The declared store of reserved element refs. */
   readonly refs: Persisted<number, number>
   readonly embeds: Embeds
+  /** The window's app keybinds, which its pages hand to it. */
+  readonly shortcuts: (window: number) => readonly KeyChord[]
   readonly emit: (window: number, value: { readonly binding: string; readonly event: PaneEvent }) => void
 }) {
   const entries = new Map<string, Entry>()
@@ -505,6 +509,24 @@ export function createBrowserPane(input: {
         // The page held keyboard focus; the app's address field needs it back.
         entry.win.webContents.focus()
         publish(entry, { type: "address", tabID: id })
+      },
+      shortcut: (key) => {
+        if (!appShortcut(key, input.shortcuts(entry.window), process.platform === "darwin")) return false
+
+        if (!entry.pages.has(id) || entry.win.isDestroyed()) return true
+        // As for the address shortcut: the command runs in the app, which may move focus there.
+        entry.win.webContents.focus()
+        publish(entry, {
+          type: "shortcut",
+          key: key.key,
+          code: key.code,
+          ctrl: key.control,
+          meta: key.meta,
+          shift: key.shift,
+          alt: key.alt,
+        })
+
+        return true
       },
       popup: (popupOptions, background) => {
         const popup = create(entry, false, popupOptions)

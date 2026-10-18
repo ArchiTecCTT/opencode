@@ -136,6 +136,8 @@ export function createBrowserPage(
     zoomed?: () => void
     /** The user pressed the address shortcut while the page had focus. */
     address?: () => void
+    /** Hands a key press to the app when it is one of the app's keybinds; true when it was, so the page skips it. */
+    shortcut?: (input: Electron.Input) => boolean
     fail: () => void
     /** Adopts a page the document opened; a background one leaves the current tab selected. */
     popup: (options: Electron.BrowserWindowConstructorOptions, background: boolean) => WebContents
@@ -185,6 +187,12 @@ export function createBrowserPage(
     if (input.key === "Escape" && inspecting) {
       event.preventDefault()
       void toggleInspect(false)
+
+      return
+    }
+
+    if (options.shortcut?.(input)) {
+      event.preventDefault()
 
       return
     }

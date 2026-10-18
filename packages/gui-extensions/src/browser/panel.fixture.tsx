@@ -193,7 +193,7 @@ export function mountBrowserPane(input: PaneHost) {
 
     const base = {
       id: "browser",
-      keybinds: { keybind: () => [], keys: (bind: string) => bind.split("+") },
+      keybinds: { keybind: () => [], keys: (bind: string) => bind.split("+"), chords: () => [] },
       desktop: { zoom: () => 1 },
       embeds,
       t,
@@ -339,6 +339,7 @@ export function mountBrowserPane(input: PaneHost) {
         report()
       },
       close: async () => undefined,
+      shortcuts: async () => undefined,
       state: () => undefined,
       on: (_name, listener) => {
         // SAFETY: the pane's Ipc has one event, whose payload is exactly this binding and PaneEvent.
@@ -783,7 +784,14 @@ export function mountBrowserRegion(input: RegionHost) {
     const locale: Locale = { locale: () => "en", direction: () => "ltr", setDirection() {} }
     const appearance: Appearance = { font: () => "monospace" }
     const router: Router = { routing: () => false, path: () => "/" }
-    const keybinds: Keybinds = { keybind: () => [], keys: (bind) => bind.split("+"), matches: () => false }
+
+    const keybinds: Keybinds = {
+      keybind: () => [],
+      keys: (bind) => bind.split("+"),
+      matches: () => false,
+      chords: () => [],
+    }
+
     const servers: Servers = { list: () => [server.id], get: () => undefined }
     const workspaces: Workspaces = { on: () => () => undefined }
 
@@ -813,6 +821,7 @@ export function mountBrowserRegion(input: RegionHost) {
       site: async () => ({ cookies: 0 }),
       clearSite: async () => undefined,
       close: async () => undefined,
+      shortcuts: async () => undefined,
       state: () => undefined,
       on: (_name, listener) => {
         // SAFETY: the pane's Ipc has one event, so every listener takes that event's payload.
@@ -861,6 +870,26 @@ export function mountBrowserRegion(input: RegionHost) {
       listeners.forEach((listener) =>
         listener({ binding, event: { type: "state", state: { tabs: [tab], focusedTabID: tabID } } }),
       )
+    }
+
+    // The desktop hands back the close chord the user pressed while Beta's page had focus.
+    const pageShortcut = () => {
+      const binding = latest()?.binding
+
+      if (!binding) return
+      const mac = /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
+
+      const event: PaneEvent = {
+        type: "shortcut",
+        key: "w",
+        code: "KeyW",
+        ctrl: !mac,
+        meta: mac,
+        shift: false,
+        alt: false,
+      }
+
+      listeners.forEach((listener) => listener({ binding, event }))
     }
 
     // Mounts once every extension is active, as the session screen does.
@@ -969,6 +998,7 @@ export function mountBrowserRegion(input: RegionHost) {
               >
                 Blank page
               </button>
+              <button onClick={pageShortcut}>Page shortcut</button>
               <button onClick={() => setStore("away", true)}>Pane away</button>
               <button onClick={() => setStore("away", false)}>Pane back</button>
             </nav>

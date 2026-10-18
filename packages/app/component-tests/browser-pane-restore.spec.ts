@@ -147,6 +147,20 @@ story("closes a blank browser tab from its address field without closing the ses
   await expect(root.getByTestId("session-state")).toHaveText("open")
 })
 
+story("runs an app shortcut a focused page handed back as if pressed in the pane", async ({ page }) => {
+  const root = page.getByTestId("browser-region-fixture")
+  await expect(root.getByText("Registrations: 1", { exact: true })).toBeVisible()
+  await root.getByRole("button", { name: "Beta", exact: true }).click()
+  await expect(root.getByText("Registrations: 2", { exact: true })).toBeVisible()
+  await root.getByRole("button", { name: "First inventory", exact: true }).click()
+  await expect(root.getByRole("tab", { name: "Preview", exact: true })).toHaveAttribute("aria-selected", "true")
+
+  // The close chord runs the pane's own close, not the session's, since it lands inside the pane.
+  await root.getByRole("button", { name: "Page shortcut", exact: true }).click()
+  await expect(root.getByTestId("browser-closes")).toHaveText('["tab_33333333-3333-3333-3333-333333333333"]')
+  await expect(root.getByTestId("session-state")).toHaveText("open")
+})
+
 story("keeps a restored browser tab selected and undrawn until the desktop's first inventory", async ({ page }) => {
   const root = page.getByTestId("browser-region-fixture")
   const tabs = root.getByRole("tab")

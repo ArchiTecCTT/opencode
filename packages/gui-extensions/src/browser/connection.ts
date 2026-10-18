@@ -8,6 +8,8 @@ export type InspectEvent = Extract<PaneEvent, { type: "inspect" }>
 
 export type PageEvent = Extract<PaneEvent, { type: "page" }>
 
+export type ShortcutEvent = Extract<PaneEvent, { type: "shortcut" }>
+
 export type Zoom = "in" | "out" | "reset"
 
 export type Connection = ReturnType<typeof createConnection>
@@ -58,6 +60,8 @@ export function createConnection(input: {
   page: (event: PageEvent) => void
   /** The user pressed the address shortcut while the page had focus. */
   address: (tabID: Browser.TabID) => void
+  /** The user pressed one of the app's keybinds while the page had focus. */
+  shortcut: (event: ShortcutEvent) => void
 }) {
   const state: ConnectionState = { browser: null, embeds: {}, suspended: false }
   let disposed = false
@@ -157,6 +161,8 @@ export function createConnection(input: {
         if (event.type === "page") return input.page(event)
 
         if (event.type === "address") return input.address(event.tabID)
+
+        if (event.type === "shortcut") return input.shortcut(event)
 
         if (event.type === "embed") {
           state.embeds = { ...state.embeds, [event.tabID]: event.embed }
