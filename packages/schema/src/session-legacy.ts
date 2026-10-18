@@ -1,8 +1,9 @@
 export * as SessionLegacy from "./session-legacy.js"
 
 /**
- * Before v2.1, native data was stored as `state` or `providerState`. Stored events, projected messages, and
- * exported sessions keep whichever shape they were written with; these upgrade them before decoding.
+ * Storage and wire compatibility for current-architecture data written before v2.1 (not V1 contracts). Native data
+ * was then named `state` or `providerState`; stored events, projected messages, and exported transcripts keep
+ * whichever shape they were written with, so these upgrade them before decoding.
  */
 
 const renames: Record<string, readonly [string, string]> = {

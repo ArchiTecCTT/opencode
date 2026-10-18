@@ -7,6 +7,7 @@ import { InstructionEntry } from "@opencode/schema/instruction-entry"
 import { Project } from "@opencode/schema/project"
 import { DateTimeUtcFromMillis, NonNegativeInt, PositiveInt } from "@opencode/schema/schema"
 import { Event } from "@opencode/schema/event"
+import { SessionLegacy } from "@opencode/schema/session-legacy"
 import { Context, Schema, SchemaGetter, Struct } from "effect"
 import { HttpApiEndpoint, HttpApiGroup, HttpApiMiddleware, HttpApiSchema, OpenApi } from "effect/http-api"
 import {
@@ -67,6 +68,19 @@ const PublicInboxInfo = Schema.Union([
   SessionInbox.Compaction,
   PublicMove,
 ]).annotate({ identifier: "Session.Inbox.Info" })
+
+// Transcripts exported before v2.1 carry older names for native data. The wire stays plain JSON so any export file
+// is accepted; decoding upgrades those names and then validates the current message shape.
+const ImportedMessages = Schema.Array(Schema.Json).pipe(
+  Schema.decodeTo(Schema.Array(Schema.Unknown), {
+    decode: SchemaGetter.transform(SessionLegacy.messages),
+    encode: SchemaGetter.passthrough({ strict: false }),
+  }),
+  Schema.decodeTo(Schema.Array(PublicSessionMessage), {
+    decode: SchemaGetter.passthrough({ strict: false }),
+    encode: SchemaGetter.passthrough({ strict: false }),
+  }),
+)
 
 const FormCreatePayload = Schema.Struct({
   id: Form.ID.pipe(Schema.optional),
@@ -165,12 +179,11 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
       HttpApiEndpoint.post("session.import", "/api/experimental/session/import", {
         payload: Schema.Struct({
           info: PublicSessionTransfer.fields.info,
-          // Validated by the handler after upgrading messages exported by earlier releases.
-          messages: Schema.Array(Schema.Json),
+          messages: ImportedMessages,
           location: Location.PublicRef.pipe(Schema.optional),
         }),
         success: Schema.Struct({ data: PublicSessionInfo }),
-        error: [ConflictError, InvalidRequestError, SessionNotFoundError],
+        error: [ConflictError, SessionNotFoundError],
       }).annotateMerge(
         OpenApi.annotations({
           identifier: "experimental.session.import",

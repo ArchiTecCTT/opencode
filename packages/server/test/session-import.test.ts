@@ -50,6 +50,7 @@ it.live("preserves imported parentID through HTTP import, read, and parent filte
     }).toEqual({ imported: parent.data.id, read: parent.data.id, children: [id] })
   }).pipe(Effect.scoped),
 )
+
 it.live("upgrades native data in transcripts exported before v2.1", () =>
   Effect.gen(function* () {
     const request = yield* setup
@@ -67,12 +68,33 @@ it.live("upgrades native data in transcripts exported before v2.1", () =>
           content: [
             { type: "text", text: "Answer", state: { signature: "text" } },
             { type: "reasoning", text: "Thinking", state: { signature: "reasoning" } },
+            {
+              type: "tool",
+              id: "call",
+              name: "web_search",
+              executed: true,
+              providerState: { call: "kept" },
+              providerResultState: { result: "kept" },
+              state: { status: "completed", input: {}, content: [{ type: "text", text: "Found" }] },
+              time: { created: 1, ran: 1, completed: 2 },
+            },
           ],
           time: { created: 1, completed: 2 },
         },
+        {
+          id: "msg_compaction",
+          type: "compaction",
+          status: "completed",
+          reason: "manual",
+          summary: "Summary",
+          recent: "",
+          providerState: { compaction: "kept" },
+          time: { created: 3 },
+        },
+        { id: "msg_moved", type: "location-switched", location: { directory: "/moved" }, time: { created: 4 } },
       ],
     })
-    expect(yield* request(`/api/session/${id}/message`)).toMatchObject({
+    expect(yield* request(`/api/session/${id}/message?order=asc`)).toMatchObject({
       data: [
         {
           id: "msg_legacy",
@@ -80,8 +102,11 @@ it.live("upgrades native data in transcripts exported before v2.1", () =>
           content: [
             { type: "text", native: { signature: "text" } },
             { type: "reasoning", native: { signature: "reasoning" } },
+            { type: "tool", native: { call: "kept" }, providerResultState: { result: "kept" } },
           ],
         },
+        { id: "msg_compaction", native: { compaction: "kept" } },
+        { id: "msg_moved", location: { directory: "/moved" } },
       ],
     })
   }).pipe(Effect.scoped),
@@ -92,13 +117,16 @@ it.live("rejects an invalid imported message without creating the session", () =
     const request = yield* setup
     const template = Schema.decodeUnknownSync(SessionResponse)(yield* request("/api/session", {}))
     const id = Session.ID.create()
-    expect(
-      yield* request(
-        "/api/experimental/session/import",
-        { info: { ...template.data, id }, messages: [{ id: "msg_invalid", type: "assistant" }] },
-        400,
-      ),
-    ).toMatchObject({ _tag: "InvalidRequestError", field: "messages" })
+    const error = yield* request(
+      "/api/experimental/session/import",
+      { info: { ...template.data, id }, messages: [{ id: "msg_invalid", type: "assistant" }] },
+      400,
+    )
+    expect(error).toMatchObject({
+      _tag: "InvalidRequestError",
+      kind: "Payload",
+      message: expect.stringContaining(`["messages"][0]`),
+    })
     expect(yield* request(`/api/session/${id}`, undefined, 404)).toMatchObject({ _tag: "SessionNotFoundError" })
   }).pipe(Effect.scoped),
 )

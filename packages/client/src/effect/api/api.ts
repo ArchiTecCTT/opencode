@@ -11,7 +11,6 @@ import type { Money } from "@opencode/schema/money"
 import type { Model } from "@opencode/schema/model"
 import type { DateTime } from "effect"
 import type { Permission } from "@opencode/schema/permission"
-import type { Schema } from "effect"
 import type { SessionMessage } from "@opencode/schema/session-message"
 import type { SessionInbox } from "@opencode/schema/session-inbox"
 import type { PromptInput } from "@opencode/schema/prompt-input"
@@ -19,6 +18,7 @@ import type { AgentAttachment } from "@opencode/schema/prompt"
 import type { Skill } from "@opencode/schema/skill"
 import type { FileDiff } from "@opencode/schema/file-diff"
 import type { InstructionEntry } from "@opencode/schema/instruction-entry"
+import type { Schema } from "effect"
 import type { Event } from "@opencode/schema/event"
 import type { EventLog } from "@opencode/schema/event-log"
 import type { Workspace } from "@opencode/schema/workspace"
@@ -215,7 +215,7 @@ export type SessionCreateOperation<E = never> = (input?: SessionCreateInput) => 
 
 export type SessionImportInput = {
   readonly info: Session.Info
-  readonly messages: ReadonlyArray<Schema.Json>
+  readonly messages: ReadonlyArray<SessionMessage.Info>
   readonly location?: Location.PublicRef | undefined
 }
 export type SessionImportOutput = Session.Info

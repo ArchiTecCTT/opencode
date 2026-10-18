@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, or, sql } from "drizzle-orm"
 import { Effect, Schema } from "effect"
+import { SessionLegacy } from "@opencode/schema/session-legacy"
 import { Database } from "../database/database.js"
 import { MessageDecodeError } from "./error.js"
 import { SessionMessage } from "./message.js"
@@ -8,7 +9,6 @@ import { Instructions } from "../instructions/index.js"
 import { InstructionState } from "./instruction-state.js"
 import { SessionProviderContext } from "./provider-context.js"
 import { SessionMessageTable } from "./sql.js"
-import { SessionLegacy } from "@opencode/schema/session-legacy"
 
 type DatabaseService = Database.Interface["db"]
 
