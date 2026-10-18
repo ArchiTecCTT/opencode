@@ -24,12 +24,7 @@ import { fromRow } from "@opencode/core/session/info"
 import { SessionInbox } from "@opencode/core/session/inbox"
 import { SessionStore } from "@opencode/core/session/store"
 import { Shell } from "@opencode/schema/shell"
-import {
-  InstructionStateTable,
-  SessionInboxTable,
-  SessionMessageTable,
-  SessionTable,
-} from "@opencode/core/session/sql"
+import { InstructionStateTable, SessionInboxTable, SessionMessageTable, SessionTable } from "@opencode/core/session/sql"
 import { testEffect } from "./lib/effect"
 import { Snapshot } from "@opencode/core/snapshot"
 
@@ -639,14 +634,25 @@ describe("SessionProjector", () => {
     }),
   )
 
-  it.effect("reads native data stored under its pre-v2.1 names", () =>
+  it.effect("reads and replays native data stored under its pre-v2.1 names", () =>
     Effect.gen(function* () {
       const db = yield* seedSession()
       const store = yield* SessionStore.Service
       const bus = yield* Bus.Service
       const assistantID = SessionMessage.ID.make("msg_legacy_assistant")
-      const { id: _, type: __, ...assistant } = encodeMessage(
-        SessionMessage.Assistant.make({ id: assistantID, type: "assistant", agent: build, model, content: [], time: { created } }),
+      const {
+        id: _,
+        type: __,
+        ...assistant
+      } = encodeMessage(
+        SessionMessage.Assistant.make({
+          id: assistantID,
+          type: "assistant",
+          agent: build,
+          model,
+          content: [],
+          time: { created },
+        }),
       )
       const legacyAssistant = {
         ...assistant,
@@ -679,14 +685,34 @@ describe("SessionProjector", () => {
           (${assistantID}, ${sessionID}, 'assistant', 0, 0, 0, ${JSON.stringify(legacyAssistant)}),
           ('msg_legacy_compaction', ${sessionID}, 'compaction', 1, 0, 0, ${JSON.stringify(legacyCompaction)})
       `)
-      const event = (seq: number, type: string, data: Record<string, unknown>) =>
-        sql`(${`evt_legacy_${seq}`}, ${sessionID}, ${seq}, 0, ${type}, ${JSON.stringify({ sessionID, assistantMessageID: assistantID, ...data })})`
+      const stored = [
+        {
+          id: Event.ID.make("evt_legacy_0"),
+          type: "session.tool.called.1",
+          data: { id: "call", input: {}, executed: true, state: { call: "kept" } },
+        },
+        {
+          id: Event.ID.make("evt_legacy_1"),
+          type: "session.tool.success.2",
+          data: {
+            id: "call",
+            content: [{ type: "text", text: "done" }],
+            executed: true,
+            resultState: { result: "kept" },
+          },
+        },
+      ].map((event, seq) => ({
+        ...event,
+        seq,
+        created: 0,
+        aggregateID: sessionID,
+        data: { sessionID, assistantMessageID: assistantID, ...event.data },
+      }))
       yield* db.run(sql`INSERT OR IGNORE INTO event_sequence (aggregate_id, seq) VALUES (${sessionID}, 1)`)
-      yield* db.run(sql`
-        INSERT INTO event (id, aggregate_id, seq, created, type, data) VALUES
-          ${event(0, "session.tool.called.1", { id: "call", input: {}, executed: true, state: { call: "kept" } })},
-          ${event(1, "session.tool.success.2", { id: "call", content: [{ type: "text", text: "done" }], executed: true, resultState: { result: "kept" } })}
-      `)
+      for (const event of stored)
+        yield* db.run(
+          sql`INSERT INTO event (id, aggregate_id, seq, created, type, data) VALUES (${event.id}, ${sessionID}, ${event.seq}, 0, ${event.type}, ${JSON.stringify(event.data)})`,
+        )
 
       const [readAssistant, readCompaction] = yield* store.messages({ sessionID, order: "asc" })
       expect(readAssistant).toMatchObject({
@@ -699,18 +725,50 @@ describe("SessionProjector", () => {
       })
       expect(readCompaction).toMatchObject({ native: { compaction: "kept" } })
 
-      const logged = yield* Stream.runCollect(bus.log({ aggregateID: sessionID }))
-      expect(logged.filter((item) => !Bus.isSynced(item))).toMatchObject([
+      expect(
+        (yield* Stream.runCollect(bus.log({ aggregateID: sessionID }))).filter((item) => !Bus.isSynced(item)),
+      ).toMatchObject([
         { type: "session.tool.called", data: { native: { call: "kept" } } },
         { type: "session.tool.success", data: { resultState: { result: "kept" } } },
       ])
 
-      // The next projection of a legacy row writes it back in the current shape.
-      yield* bus.publish(SessionEvent.Step.Streamed, { sessionID, assistantMessageID: assistantID })
+      // Re-delivering an event that is already stored in its legacy shape stays idempotent.
+      yield* Effect.forEach(stored, (event) => bus.replay(event), { discard: true })
+
+      // A legacy-shaped event replayed from elsewhere is projected and stored in the current shape.
+      yield* bus.replay({
+        id: Event.ID.make("evt_legacy_2"),
+        type: "session.step.ended.1",
+        seq: 2,
+        created: 0,
+        aggregateID: sessionID,
+        data: {
+          sessionID,
+          assistantMessageID: assistantID,
+          finish: "stop",
+          providerState: { step: "replayed" },
+          cost: 0,
+          tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+        },
+      })
+      const replayed = yield* db.get<{ data: string }>(sql`SELECT data FROM event WHERE id = 'evt_legacy_2'`)
+      expect(JSON.parse(replayed?.data ?? "{}")).toMatchObject({ native: { step: "replayed" } })
+      expect(JSON.parse(replayed?.data ?? "{}")).not.toHaveProperty("providerState")
+
+      // Projecting onto the legacy row wrote it back in the current shape.
       const rewritten = JSON.parse(
-        (yield* db.get<{ data: string }>(sql`SELECT data FROM session_message WHERE id = ${assistantID}`))?.data ?? "{}",
+        (yield* db.get<{ data: string }>(sql`SELECT data FROM session_message WHERE id = ${assistantID}`))?.data ??
+          "{}",
       )
       expect(rewritten).not.toHaveProperty("providerState")
+      expect(rewritten).toMatchObject({
+        native: { step: "replayed" },
+        content: [
+          { type: "text", native: { signature: "text" } },
+          { type: "reasoning", native: { signature: "reasoning" } },
+          { type: "tool", native: { call: "kept" }, providerResultState: { result: "kept" } },
+        ],
+      })
       expect(rewritten.content.map((part: Record<string, unknown>) => Object.keys(part).toSorted())).toEqual([
         ["native", "text", "type"],
         ["native", "text", "type"],

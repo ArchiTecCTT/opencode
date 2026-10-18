@@ -8,7 +8,7 @@ import { Instructions } from "../instructions/index.js"
 import { InstructionState } from "./instruction-state.js"
 import { SessionProviderContext } from "./provider-context.js"
 import { SessionMessageTable } from "./sql.js"
-import { SessionLegacy } from "./legacy.js"
+import { SessionLegacy } from "@opencode/schema/session-legacy"
 
 type DatabaseService = Database.Interface["db"]
 

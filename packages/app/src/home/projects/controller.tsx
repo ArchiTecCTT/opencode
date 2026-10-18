@@ -16,6 +16,7 @@ import { Persistence } from "@/runtime/persistence/schema"
 import type { HomeController } from "../model"
 import { useGlobal } from "@/runtime/server/runtime"
 import { SessionTransfer } from "@opencode/schema/session-transfer"
+import { SessionLegacy } from "@opencode/schema/session-legacy"
 import { useRevealProject } from "./reveal"
 
 export const HomeServersSchema = Schema.Struct({
@@ -121,9 +122,8 @@ export function createHomeProjectsController(home: HomeController) {
               extensions: ["json"],
             },
             async (file) => {
-              const data = await Schema.decodeUnknownPromise(Schema.fromJsonString(SessionTransfer.Data))(
-                await file.text(),
-              )
+              const json = await Schema.decodeUnknownPromise(Schema.fromJsonString(Schema.Unknown))(await file.text())
+              const data = await Schema.decodeUnknownPromise(SessionTransfer.Data)(SessionLegacy.transfer(json))
 
               const api = home.server.context(conn).sdk.api.session
 

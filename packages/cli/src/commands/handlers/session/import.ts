@@ -2,6 +2,7 @@ import { OpenCode } from "@opencode/client"
 import { Service } from "@opencode/client/effect/service"
 import { Session } from "@opencode/schema/session"
 import { SessionTransfer } from "@opencode/schema/session-transfer"
+import { SessionLegacy } from "@opencode/schema/session-legacy"
 import { Effect, Option, Schema } from "effect"
 import { EOL } from "node:os"
 import path from "node:path"
@@ -23,7 +24,8 @@ export default Runtime.handler(
       catch: (cause) =>
         new Error(`Failed to read session data: ${cause instanceof Error ? cause.message : String(cause)}`),
     })
-    const data = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(SessionTransfer.Data))(text)
+    const json = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown))(text)
+    const data = yield* Schema.decodeUnknownEffect(SessionTransfer.Data)(SessionLegacy.transfer(json))
     const encoded = Schema.encodeSync(SessionTransfer.Data)(data)
     const server = yield* ServerConnection.resolve({
       server: Option.getOrUndefined(input.server),
