@@ -71,6 +71,10 @@ const envelope = (aggregateID: string, seq: number, version: number) => ({
   version: Event.Version.make(version),
 })
 
+// Every stored event decodes through here, so payloads written in older shapes are upgraded in one place.
+const decodeStoredData = (definition: Event.DurableDefinition, data: unknown) =>
+  Schema.decodeUnknownSync(definition.data)(SessionLegacy.event(definition.type, data))
+
 const decodeSerializedEvent = (event: SerializedEvent): Event.Payload => {
   const definition = Durable.get(event.type)
   if (!definition?.durable) {
@@ -81,7 +85,7 @@ const decodeSerializedEvent = (event: SerializedEvent): Event.Payload => {
     created: event.created ?? 0,
     type: definition.type,
     durable: envelope(event.aggregateID, event.seq, definition.durable.version),
-    data: Schema.decodeUnknownSync(definition.data)(SessionLegacy.event(definition.type, event.data)),
+    data: decodeStoredData(definition, event.data),
   }
 }
 
@@ -685,7 +689,7 @@ export function configured(options?: Options) {
                   id: event.id,
                   created: event.created ?? 0,
                   type: definition.type,
-                  data: Schema.decodeUnknownSync(definition.data)(SessionLegacy.event(definition.type, event.data)),
+                  data: decodeStoredData(definition, event.data),
                 } as Event.Payload
                 const committed = yield* commitDurableEvent(definition, payload, {
                   seq: event.seq,

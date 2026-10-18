@@ -13,6 +13,7 @@ import { SessionLegacy } from "./legacy.js"
 type DatabaseService = Database.Interface["db"]
 
 const decode = Schema.decodeUnknownEffect(SessionMessage.Info)
+const decodeSync = Schema.decodeUnknownSync(SessionMessage.Info)
 
 /**
  * Which completed compactions bound a history read. Local summaries always do. Native
@@ -60,8 +61,17 @@ export const latestCompaction = Effect.fnUntraced(function* (
     .pipe(Effect.orDie)
 })
 
+// Every stored message row decodes through here, so rows written in older shapes are upgraded in one place.
+const rowInput = (row: typeof SessionMessageTable.$inferSelect) => ({
+  ...SessionLegacy.message(row.type, row.data),
+  id: row.id,
+  type: row.type,
+})
+
+export const decodeMessageRowSync = (row: typeof SessionMessageTable.$inferSelect) => decodeSync(rowInput(row))
+
 export const decodeMessageRow = (row: typeof SessionMessageTable.$inferSelect) =>
-  decode({ ...SessionLegacy.message(row.type, row.data), id: row.id, type: row.type }).pipe(
+  decode(rowInput(row)).pipe(
     Effect.tap((message) =>
       SessionProviderContext.isCheckpoint(message)
         ? SessionProviderContext.validate(message.providerContext)
