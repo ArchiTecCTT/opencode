@@ -12,6 +12,7 @@ import { MessageNotFoundError } from "./error.js"
 import { SessionMessage } from "./message.js"
 import { SessionSchema } from "./schema.js"
 import { SessionMessageTable } from "./sql.js"
+import { SessionLegacy } from "./legacy.js"
 
 interface BoundaryInput {
   readonly sessionID: SessionSchema.ID
@@ -105,7 +106,9 @@ const plan = Effect.fn("SessionRevert.plan")(function* (db: Database.Interface["
   const decode = Schema.decodeUnknownEffect(SessionMessage.Info)
   const files = new Map<RelativePath, Snapshot.ID>()
   for (const row of rows) {
-    const message = yield* decode({ ...row.data, id: row.id, type: row.type }).pipe(Effect.orDie)
+    const message = yield* decode({ ...SessionLegacy.message(row.type, row.data), id: row.id, type: row.type }).pipe(
+      Effect.orDie,
+    )
     if (message.type !== "assistant" || !message.snapshot?.start) continue
     for (const file of message.snapshot.files ?? [])
       if (!files.has(file)) files.set(file, Snapshot.ID.make(message.snapshot.start))

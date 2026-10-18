@@ -430,7 +430,7 @@ describe("V1Migration.transformSession", () => {
     })
     expect(content[2]).toMatchObject({
       id: "completed",
-      providerState: { provider: true },
+      native: { provider: true },
       state: {
         status: "completed",
         content: [

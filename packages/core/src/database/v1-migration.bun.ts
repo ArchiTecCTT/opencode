@@ -953,7 +953,7 @@ function migrateTool(part: typeof SessionV1.ToolPart.Type, fallback: number) {
     type: "tool" as const,
     id: part.callID,
     name: part.tool,
-    ...(part.metadata ? { providerState: part.metadata } : {}),
+    ...(part.metadata ? { native: part.metadata } : {}),
   }
   if (part.state.status === "completed")
     return {

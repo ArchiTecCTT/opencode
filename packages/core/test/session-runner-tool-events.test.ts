@@ -132,7 +132,7 @@ test("provider-executed success derives content and retains provider result stat
       { type: "text", text: "Image read successfully" },
       { type: "file", uri: `data:image/png;base64,${base64}`, mime: "image/png" },
     ],
-    resultState: { result: { type: "content" } },
+    nativeResult: { result: { type: "content" } },
   })
 })
 
@@ -304,7 +304,7 @@ test("provider metadata is flattened using the route key", async () => {
   )
 
   expect(published.find((event) => event.type === "session.reasoning.started.1")?.data).toMatchObject({
-    state: { signature: "signed" },
+    native: { signature: "signed" },
   })
 })
 
@@ -331,7 +331,7 @@ test("reasoning state from start, empty delta, and end is merged", async () => {
   )
 
   expect(published.find((event) => event.type === "session.reasoning.ended.1")?.data).toMatchObject({
-    state: { blockType: "thinking", signature: "signed", stopReason: "tool_use" },
+    native: { blockType: "thinking", signature: "signed", stopReason: "tool_use" },
   })
 })
 
@@ -553,10 +553,10 @@ test("provider-executed tool metadata is flattened using the route key", async (
   )
 
   expect(published.find((event) => event.type === "session.tool.called.1")?.data).toMatchObject({
-    state: { itemId: "call" },
+    native: { itemId: "call" },
   })
   expect(published.find((event) => event.type === "session.tool.success.2")?.data).toMatchObject({
-    resultState: { itemId: "result" },
+    nativeResult: { itemId: "result" },
   })
 })
 
@@ -575,14 +575,14 @@ test("success event data can carry provider-executed result state", () => {
     id: "call-old",
     content: [{ type: "file", uri: `data:image/png;base64,${base64}`, mime: "image/png" }],
     executed: true,
-    resultState: {
+    nativeResult: {
       result: {
         type: "content",
         value: [{ type: "file", uri: `data:image/png;base64,${base64}`, mime: "image/png" }],
       },
     },
   })
-  expect(decoded.resultState).toMatchObject({ result: { type: "content" } })
+  expect(decoded.nativeResult).toMatchObject({ result: { type: "content" } })
 })
 
 test("step start waits for the pending start snapshot", async () => {
@@ -635,7 +635,7 @@ test("content-filter finish retains failure evidence until step closeout", async
   expect(settlement).toMatchObject({
     finish: "content-filter",
     rawFinish: "refusal",
-    providerState: {
+    native: {
       stopDetails: { type: "refusal", category: "safety", explanation: "Blocked" },
     },
     tokens: { input: 8, output: 2, reasoning: 1 },
@@ -654,7 +654,7 @@ test("content-filter finish retains failure evidence until step closeout", async
     error: { type: "provider.content-filter", message: "Provider blocked the response" },
     finish: "content-filter",
     rawFinish: "refusal",
-    providerState: {
+    native: {
       stopDetails: { type: "refusal", category: "safety", explanation: "Blocked" },
     },
     cost: 1.25,

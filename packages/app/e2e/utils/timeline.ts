@@ -74,8 +74,8 @@ type ToolSeed = {
   name: string
   messageID?: string
   executed?: boolean
-  providerState?: Record<string, unknown>
-  providerResultState?: Record<string, unknown>
+  native?: Record<string, unknown>
+  nativeResult?: Record<string, unknown>
   state:
     | { status: "streaming"; input: Record<string, unknown>; raw: string }
     | {
@@ -526,7 +526,7 @@ export function partUpdated(part: PartSeed<"assistant">): readonly OpenCodeEvent
           sessionID,
           assistantMessageID: messageID,
           ordinal: ref.ordinal!,
-          state: jsonRecord(part.metadata),
+          native: jsonRecord(part.metadata),
         }),
       ]
 
@@ -538,7 +538,7 @@ export function partUpdated(part: PartSeed<"assistant">): readonly OpenCodeEvent
               sessionID,
               assistantMessageID: messageID,
               ordinal: ref.ordinal!,
-              state: jsonRecord(part.metadata),
+              native: jsonRecord(part.metadata),
             }),
           ]),
       makeEvent("session.reasoning.ended", {
@@ -546,7 +546,7 @@ export function partUpdated(part: PartSeed<"assistant">): readonly OpenCodeEvent
         assistantMessageID: messageID,
         ordinal: ref.ordinal!,
         text: part.text,
-        state: jsonRecord(part.metadata),
+        native: jsonRecord(part.metadata),
       }),
     ]
   }
@@ -850,7 +850,7 @@ function messageContent(
     return {
       type: "reasoning",
       text: part.text,
-      state: jsonRecord(part.metadata),
+      native: jsonRecord(part.metadata),
       time: part.time
         ? { created: part.time.start, ...(part.time.end === undefined ? {} : { completed: part.time.end }) }
         : undefined,
@@ -869,8 +869,8 @@ function messageContent(
       ...(completed === undefined ? {} : { completed }),
     },
     ...(part.executed === undefined ? {} : { executed: part.executed }),
-    ...(part.providerState ? { providerState: jsonRecord(part.providerState) } : {}),
-    ...(part.providerResultState ? { providerResultState: jsonRecord(part.providerResultState) } : {}),
+    ...(part.native ? { native: jsonRecord(part.native) } : {}),
+    ...(part.nativeResult ? { nativeResult: jsonRecord(part.nativeResult) } : {}),
   }
 
   if (state.status === "streaming") return { ...base, state: { status: "streaming", input: state.raw } }
@@ -949,7 +949,7 @@ function toolEvents(part: ToolSeed, messageID: string): readonly OpenCodeEvent[]
         id: part.id,
         input: part.state.input,
         executed: part.executed ?? true,
-        state: jsonRecord(part.providerState),
+        native: jsonRecord(part.native),
       }),
     )
   }
@@ -983,7 +983,7 @@ function toolEvents(part: ToolSeed, messageID: string): readonly OpenCodeEvent[]
         error: { type: "ToolError", message: part.state.error },
         metadata: jsonRecord(part.state.metadata),
         executed: part.executed ?? true,
-        resultState: jsonRecord(part.providerResultState),
+        nativeResult: jsonRecord(part.nativeResult),
       }),
     )
     toolStates.set(part.id, part.state.status)
@@ -999,7 +999,7 @@ function toolEvents(part: ToolSeed, messageID: string): readonly OpenCodeEvent[]
       content: [{ type: "text", text: part.state.output }],
       metadata: jsonRecord(part.state.metadata),
       executed: part.executed ?? true,
-      resultState: jsonRecord(part.providerResultState),
+      nativeResult: jsonRecord(part.nativeResult),
     }),
   )
   toolStates.set(part.id, part.state.status)

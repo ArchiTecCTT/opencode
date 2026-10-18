@@ -8,6 +8,7 @@ import { Instructions } from "../instructions/index.js"
 import { InstructionState } from "./instruction-state.js"
 import { SessionProviderContext } from "./provider-context.js"
 import { SessionMessageTable } from "./sql.js"
+import { SessionLegacy } from "./legacy.js"
 
 type DatabaseService = Database.Interface["db"]
 
@@ -60,7 +61,7 @@ export const latestCompaction = Effect.fnUntraced(function* (
 })
 
 export const decodeMessageRow = (row: typeof SessionMessageTable.$inferSelect) =>
-  decode({ ...row.data, id: row.id, type: row.type }).pipe(
+  decode({ ...SessionLegacy.message(row.type, row.data), id: row.id, type: row.type }).pipe(
     Effect.tap((message) =>
       SessionProviderContext.isCheckpoint(message)
         ? SessionProviderContext.validate(message.providerContext)

@@ -23,6 +23,7 @@ import { Worktree } from "@opencode/schema/worktree"
 import { Project } from "@opencode/schema/project"
 import { AbsolutePath, RelativePath } from "../schema.js"
 import type { SessionSchema } from "./schema.js"
+import { SessionLegacy } from "./legacy.js"
 import { ProjectTable } from "../project/sql.js"
 
 type DatabaseService = Database.Interface["db"]
@@ -237,7 +238,7 @@ const projectFork = Effect.fn("SessionProjector.projectFork")(function* (
 function run(db: DatabaseService, event: MessageEvent) {
   return Effect.gen(function* () {
     const decodeRow = (row: typeof SessionMessageTable.$inferSelect) =>
-      decodeMessage({ ...row.data, id: row.id, type: row.type })
+      decodeMessage({ ...SessionLegacy.message(row.type, row.data), id: row.id, type: row.type })
     const updateMessage = (message: SessionMessage.Info) => {
       const encoded = encodeMessage(message)
       const { id, type, ...data } = encoded

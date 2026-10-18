@@ -94,7 +94,7 @@ export type SkillName = string
 
 export type ShellID = string
 
-export type SessionMessageProviderState = { [x: string]: JsonValue }
+export type SessionMessageNative = { [x: string]: JsonValue }
 
 export type SessionMessageToolStateStreaming = { status: "streaming"; input: string }
 
@@ -134,7 +134,7 @@ export type InstructionHash = string
 
 export type SessionInboxSyntheticPayload1 = { text: string; description?: string; metadata?: { [x: string]: any } }
 
-export type SessionMessageProviderState1 = { [x: string]: any }
+export type SessionMessageNative1 = { [x: string]: any }
 
 export type ToolFileContent1 = { type: "file"; uri: string; mime: string; name?: string | undefined }
 
@@ -490,12 +490,12 @@ export type ShellInfo1 = {
   time: { started: number; completed?: number }
 }
 
-export type SessionMessageAssistantText = { type: "text"; text: string; state?: SessionMessageProviderState }
+export type SessionMessageAssistantText = { type: "text"; text: string; native?: SessionMessageNative }
 
 export type SessionMessageAssistantReasoning = {
   type: "reasoning"
   text: string
-  state?: SessionMessageProviderState
+  native?: SessionMessageNative
   time?: { created: number; completed?: number }
 }
 
@@ -550,12 +550,12 @@ export type EventLogSynced = { type: "log.synced"; aggregateID: string; seq?: Ev
 
 export type LocationRef = { directory: AbsolutePath; workspaceID?: WorkspaceID }
 
-export type SessionMessageAssistantText1 = { type: "text"; text: string; state?: SessionMessageProviderState1 }
+export type SessionMessageAssistantText1 = { type: "text"; text: string; native?: SessionMessageNative1 }
 
 export type SessionMessageAssistantReasoning1 = {
   type: "reasoning"
   text: string
-  state?: SessionMessageProviderState1
+  native?: SessionMessageNative1
   time?: { created: number; completed?: number }
 }
 
@@ -1217,7 +1217,7 @@ export type SessionStepEnded = {
     assistantMessageID: SessionMessageID
     finish: "stop" | "length" | "tool-calls" | "content-filter" | "error" | "unknown"
     rawFinish?: string
-    providerState?: SessionMessageProviderState1
+    native?: SessionMessageNative1
     cost: MoneyUSD
     tokens: TokenUsageInfo
     snapshot?: SnapshotID
@@ -1238,7 +1238,7 @@ export type SessionStepFailed = {
     error: SessionStructuredError
     finish?: "content-filter"
     rawFinish?: string
-    providerState?: SessionMessageProviderState1
+    native?: SessionMessageNative1
     cost?: MoneyUSD
     tokens?: TokenUsageInfo
     snapshot?: SnapshotID
@@ -1268,7 +1268,7 @@ export type SessionTextEnded = {
     assistantMessageID: SessionMessageID
     ordinal: number
     text: string
-    state?: SessionMessageProviderState1
+    native?: SessionMessageNative1
   }
 }
 
@@ -1279,12 +1279,7 @@ export type SessionReasoningStarted = {
   type: "session.reasoning.started"
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
-  data: {
-    sessionID: SessionID
-    assistantMessageID: SessionMessageID
-    ordinal: number
-    state?: SessionMessageProviderState1
-  }
+  data: { sessionID: SessionID; assistantMessageID: SessionMessageID; ordinal: number; native?: SessionMessageNative1 }
 }
 
 export type SessionReasoningEnded = {
@@ -1299,7 +1294,7 @@ export type SessionReasoningEnded = {
     assistantMessageID: SessionMessageID
     ordinal: number
     text: string
-    state?: SessionMessageProviderState1
+    native?: SessionMessageNative1
   }
 }
 
@@ -1336,7 +1331,7 @@ export type SessionToolCalled = {
     id: string
     input: { [x: string]: any }
     executed: boolean
-    state?: SessionMessageProviderState1
+    native?: SessionMessageNative1
   }
 }
 
@@ -1876,7 +1871,7 @@ export type SessionToolSuccess = {
     content: [ToolContent1, ...Array<ToolContent1>]
     metadata?: { [x: string]: JsonValue }
     executed: boolean
-    resultState?: SessionMessageProviderState1
+    nativeResult?: SessionMessageNative1
   }
 }
 
@@ -1895,7 +1890,7 @@ export type SessionToolFailed = {
     content?: [ToolContent1, ...Array<ToolContent1>]
     metadata?: { [x: string]: JsonValue }
     executed: boolean
-    resultState?: SessionMessageProviderState1
+    nativeResult?: SessionMessageNative1
   }
 }
 
@@ -2042,7 +2037,7 @@ export type SessionMessageCompactionCompleted = {
   status: "completed"
   reason: "auto" | "manual"
   model?: ModelRef
-  providerState?: SessionMessageProviderState
+  native?: SessionMessageNative
   summary: string
   recent: string
   providerContext?: SessionProviderContext
@@ -2061,7 +2056,7 @@ export type SessionCompactionEnded = {
     sessionID: SessionID
     reason: "auto" | "manual"
     model?: ModelRef
-    providerState?: SessionMessageProviderState1
+    native?: SessionMessageNative1
     providerContext?: SessionProviderContext
     text: string
     recent: string
@@ -2351,8 +2346,8 @@ export type SessionMessageAssistantTool = {
   id: string
   name: string
   executed?: boolean
-  providerState?: SessionMessageProviderState
-  providerResultState?: SessionMessageProviderState
+  native?: SessionMessageNative
+  nativeResult?: SessionMessageNative
   state:
     | SessionMessageToolStateStreaming
     | SessionMessageToolStateRunning
@@ -2372,8 +2367,8 @@ export type SessionMessageAssistantTool1 = {
   id: string
   name: string
   executed?: boolean
-  providerState?: SessionMessageProviderState1
-  providerResultState?: SessionMessageProviderState1
+  native?: SessionMessageNative1
+  nativeResult?: SessionMessageNative1
   state:
     | SessionMessageToolStateStreaming
     | SessionMessageToolStateRunning1
@@ -2411,7 +2406,7 @@ export type SessionMessageAssistant = {
   snapshot?: { start?: SnapshotID; end?: SnapshotID; files?: Array<RelativePath> }
   finish?: "stop" | "length" | "tool-calls" | "content-filter" | "error" | "unknown"
   rawFinish?: string
-  providerState?: SessionMessageProviderState
+  native?: SessionMessageNative
   cost?: MoneyUSD
   tokens?: TokenUsageInfo
   error?: SessionStructuredError
@@ -3352,11 +3347,11 @@ export type SessionImportInput = {
           readonly agent: string
           readonly model: { readonly id: string; readonly providerID: string; readonly variant?: string }
           readonly content: ReadonlyArray<
-            | { readonly type: "text"; readonly text: string; readonly state?: { readonly [x: string]: JsonValue } }
+            | { readonly type: "text"; readonly text: string; readonly native?: { readonly [x: string]: JsonValue } }
             | {
                 readonly type: "reasoning"
                 readonly text: string
-                readonly state?: { readonly [x: string]: JsonValue }
+                readonly native?: { readonly [x: string]: JsonValue }
                 readonly time?: { readonly created: number; readonly completed?: number }
               }
             | {
@@ -3364,8 +3359,8 @@ export type SessionImportInput = {
                 readonly id: string
                 readonly name: string
                 readonly executed?: boolean
-                readonly providerState?: { readonly [x: string]: JsonValue }
-                readonly providerResultState?: { readonly [x: string]: JsonValue }
+                readonly native?: { readonly [x: string]: JsonValue }
+                readonly nativeResult?: { readonly [x: string]: JsonValue }
                 readonly state:
                   | { readonly status: "streaming"; readonly input: string }
                   | {
@@ -3435,7 +3430,7 @@ export type SessionImportInput = {
           readonly snapshot?: { readonly start?: string; readonly end?: string; readonly files?: ReadonlyArray<string> }
           readonly finish?: "stop" | "length" | "tool-calls" | "content-filter" | "error" | "unknown"
           readonly rawFinish?: string
-          readonly providerState?: { readonly [x: string]: JsonValue }
+          readonly native?: { readonly [x: string]: JsonValue }
           readonly cost?: number
           readonly tokens?: {
             readonly input: number
@@ -3479,7 +3474,7 @@ export type SessionImportInput = {
               readonly status: "completed"
               readonly reason: "auto" | "manual"
               readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string }
-              readonly providerState?: { readonly [x: string]: JsonValue }
+              readonly native?: { readonly [x: string]: JsonValue }
               readonly summary: string
               readonly recent: string
               readonly providerContext?: {
@@ -3695,11 +3690,11 @@ export type SessionImportInput = {
           readonly agent: string
           readonly model: { readonly id: string; readonly providerID: string; readonly variant?: string }
           readonly content: ReadonlyArray<
-            | { readonly type: "text"; readonly text: string; readonly state?: { readonly [x: string]: JsonValue } }
+            | { readonly type: "text"; readonly text: string; readonly native?: { readonly [x: string]: JsonValue } }
             | {
                 readonly type: "reasoning"
                 readonly text: string
-                readonly state?: { readonly [x: string]: JsonValue }
+                readonly native?: { readonly [x: string]: JsonValue }
                 readonly time?: { readonly created: number; readonly completed?: number }
               }
             | {
@@ -3707,8 +3702,8 @@ export type SessionImportInput = {
                 readonly id: string
                 readonly name: string
                 readonly executed?: boolean
-                readonly providerState?: { readonly [x: string]: JsonValue }
-                readonly providerResultState?: { readonly [x: string]: JsonValue }
+                readonly native?: { readonly [x: string]: JsonValue }
+                readonly nativeResult?: { readonly [x: string]: JsonValue }
                 readonly state:
                   | { readonly status: "streaming"; readonly input: string }
                   | {
@@ -3778,7 +3773,7 @@ export type SessionImportInput = {
           readonly snapshot?: { readonly start?: string; readonly end?: string; readonly files?: ReadonlyArray<string> }
           readonly finish?: "stop" | "length" | "tool-calls" | "content-filter" | "error" | "unknown"
           readonly rawFinish?: string
-          readonly providerState?: { readonly [x: string]: JsonValue }
+          readonly native?: { readonly [x: string]: JsonValue }
           readonly cost?: number
           readonly tokens?: {
             readonly input: number
@@ -3822,7 +3817,7 @@ export type SessionImportInput = {
               readonly status: "completed"
               readonly reason: "auto" | "manual"
               readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string }
-              readonly providerState?: { readonly [x: string]: JsonValue }
+              readonly native?: { readonly [x: string]: JsonValue }
               readonly summary: string
               readonly recent: string
               readonly providerContext?: {
@@ -4038,11 +4033,11 @@ export type SessionImportInput = {
           readonly agent: string
           readonly model: { readonly id: string; readonly providerID: string; readonly variant?: string }
           readonly content: ReadonlyArray<
-            | { readonly type: "text"; readonly text: string; readonly state?: { readonly [x: string]: JsonValue } }
+            | { readonly type: "text"; readonly text: string; readonly native?: { readonly [x: string]: JsonValue } }
             | {
                 readonly type: "reasoning"
                 readonly text: string
-                readonly state?: { readonly [x: string]: JsonValue }
+                readonly native?: { readonly [x: string]: JsonValue }
                 readonly time?: { readonly created: number; readonly completed?: number }
               }
             | {
@@ -4050,8 +4045,8 @@ export type SessionImportInput = {
                 readonly id: string
                 readonly name: string
                 readonly executed?: boolean
-                readonly providerState?: { readonly [x: string]: JsonValue }
-                readonly providerResultState?: { readonly [x: string]: JsonValue }
+                readonly native?: { readonly [x: string]: JsonValue }
+                readonly nativeResult?: { readonly [x: string]: JsonValue }
                 readonly state:
                   | { readonly status: "streaming"; readonly input: string }
                   | {
@@ -4121,7 +4116,7 @@ export type SessionImportInput = {
           readonly snapshot?: { readonly start?: string; readonly end?: string; readonly files?: ReadonlyArray<string> }
           readonly finish?: "stop" | "length" | "tool-calls" | "content-filter" | "error" | "unknown"
           readonly rawFinish?: string
-          readonly providerState?: { readonly [x: string]: JsonValue }
+          readonly native?: { readonly [x: string]: JsonValue }
           readonly cost?: number
           readonly tokens?: {
             readonly input: number
@@ -4165,7 +4160,7 @@ export type SessionImportInput = {
               readonly status: "completed"
               readonly reason: "auto" | "manual"
               readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string }
-              readonly providerState?: { readonly [x: string]: JsonValue }
+              readonly native?: { readonly [x: string]: JsonValue }
               readonly summary: string
               readonly recent: string
               readonly providerContext?: {

@@ -12,6 +12,7 @@ import { makeGlobalNode } from "@opencode/util/effect/app-node"
 import { isDeepStrictEqual } from "node:util"
 import { Durable } from "@opencode/schema/durable-event-manifest"
 import { SessionEvent } from "@opencode/schema/session-event"
+import { SessionLegacy } from "./session/legacy.js"
 import type { SessionID } from "@opencode/schema/session-id"
 import { AbsolutePath } from "@opencode/schema/schema"
 
@@ -80,7 +81,7 @@ const decodeSerializedEvent = (event: SerializedEvent): Event.Payload => {
     created: event.created ?? 0,
     type: definition.type,
     durable: envelope(event.aggregateID, event.seq, definition.durable.version),
-    data: Schema.decodeUnknownSync(definition.data)(event.data),
+    data: Schema.decodeUnknownSync(definition.data)(SessionLegacy.event(definition.type, event.data)),
   }
 }
 
@@ -684,7 +685,7 @@ export function configured(options?: Options) {
                   id: event.id,
                   created: event.created ?? 0,
                   type: definition.type,
-                  data: Schema.decodeUnknownSync(definition.data)(event.data),
+                  data: Schema.decodeUnknownSync(definition.data)(SessionLegacy.event(definition.type, event.data)),
                 } as Event.Payload
                 const committed = yield* commitDurableEvent(definition, payload, {
                   seq: event.seq,
