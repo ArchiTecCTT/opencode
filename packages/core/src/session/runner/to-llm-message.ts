@@ -193,7 +193,7 @@ const assistant = (message: SessionMessage.Assistant, model: Model.Ref, provider
     )
     if (item.executed !== true) return [call]
     // Hosted tools (e.g. google_search) run inside the provider, so their
-    // result payload (`nativeResult`) is provider-format data rather
+    // result payload (`providerResultState`) is provider-format data rather
     // than model-scoped proof: it stays replayable across models of the same
     // provider. After a model switch, echo only that payload — never fall
     // back to `native`, whose call-side values are bound to the old
@@ -201,9 +201,9 @@ const assistant = (message: SessionMessage.Assistant, model: Model.Ref, provider
     const result = toolResult(
       item,
       reuseToolProviderMetadata
-        ? providerMetadata(providerMetadataKey, item.nativeResult ?? item.native)
-        : sameProvider && item.nativeResult !== undefined
-          ? providerMetadata(providerMetadataKey, item.nativeResult)
+        ? providerMetadata(providerMetadataKey, item.providerResultState ?? item.native)
+        : sameProvider && item.providerResultState !== undefined
+          ? providerMetadata(providerMetadataKey, item.providerResultState)
           : undefined,
     )
     return result ? [call, result] : [call]
@@ -219,7 +219,7 @@ const assistant = (message: SessionMessage.Assistant, model: Model.Ref, provider
       toolResult(
         item,
         reuseProviderMetadata
-          ? providerMetadata(providerMetadataKey, item.nativeResult ?? item.native)
+          ? providerMetadata(providerMetadataKey, item.providerResultState ?? item.native)
           : undefined,
       ),
     )

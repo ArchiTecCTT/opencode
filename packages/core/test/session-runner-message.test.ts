@@ -785,7 +785,7 @@ Earlier work
               name: "web_search",
               executed: true,
               native: { continuation: "hosted-call" },
-              nativeResult: { continuation: "hosted-result" },
+              providerResultState: { continuation: "hosted-result" },
               state: SessionMessage.ToolStateCompleted.make({
                 status: "completed",
                 input: { query: "Effect" },
@@ -955,7 +955,7 @@ Earlier work
               name: "web_search",
               executed: true,
               native: { itemId: "call_completed" },
-              nativeResult: { itemId: "result_completed" },
+              providerResultState: { itemId: "result_completed" },
               state: SessionMessage.ToolStateCompleted.make({
                 status: "completed",
                 input: { query: "Effect" },
@@ -969,7 +969,7 @@ Earlier work
               name: "web_search",
               executed: true,
               native: { itemId: "call_failed" },
-              nativeResult: { itemId: "result_failed" },
+              providerResultState: { itemId: "result_failed" },
               state: SessionMessage.ToolStateError.make({
                 status: "error",
                 input: { query: "Effect" },
@@ -1084,7 +1084,7 @@ Earlier work
               name: "web_search",
               executed: true,
               native: { itemId: "hosted-old-model" },
-              nativeResult: { itemId: "hosted-old-model" },
+              providerResultState: { itemId: "hosted-old-model" },
               state: SessionMessage.ToolStateCompleted.make({
                 status: "completed",
                 input: { query: "Effect" },
@@ -1098,7 +1098,7 @@ Earlier work
               name: "read",
               executed: false,
               native: { call: "old" },
-              nativeResult: { result: "old" },
+              providerResultState: { result: "old" },
               state: SessionMessage.ToolStateCompleted.make({
                 status: "completed",
                 input: { path: "README.md" },

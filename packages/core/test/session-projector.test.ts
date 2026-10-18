@@ -694,7 +694,7 @@ describe("SessionProjector", () => {
         content: [
           { type: "text", native: { signature: "text" } },
           { type: "reasoning", native: { signature: "reasoning" } },
-          { type: "tool", native: { call: "kept" }, nativeResult: { result: "kept" } },
+          { type: "tool", native: { call: "kept" }, providerResultState: { result: "kept" } },
         ],
       })
       expect(readCompaction).toMatchObject({ native: { compaction: "kept" } })
@@ -702,7 +702,7 @@ describe("SessionProjector", () => {
       const logged = yield* Stream.runCollect(bus.log({ aggregateID: sessionID }))
       expect(logged.filter((item) => !Bus.isSynced(item))).toMatchObject([
         { type: "session.tool.called", data: { native: { call: "kept" } } },
-        { type: "session.tool.success", data: { nativeResult: { result: "kept" } } },
+        { type: "session.tool.success", data: { resultState: { result: "kept" } } },
       ])
 
       // The next projection of a legacy row writes it back in the current shape.
@@ -714,7 +714,7 @@ describe("SessionProjector", () => {
       expect(rewritten.content.map((part: Record<string, unknown>) => Object.keys(part).toSorted())).toEqual([
         ["native", "text", "type"],
         ["native", "text", "type"],
-        ["executed", "id", "name", "native", "nativeResult", "state", "time", "type"],
+        ["executed", "id", "name", "native", "providerResultState", "state", "time", "type"],
       ])
     }),
   )

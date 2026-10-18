@@ -18912,7 +18912,7 @@
           "native": {
             "$ref": "#/components/schemas/Session.Message.Native_2"
           },
-          "nativeResult": {
+          "providerResultState": {
             "$ref": "#/components/schemas/Session.Message.Native_3"
           },
           "state": {

@@ -166,8 +166,7 @@ export const AssistantTool = Schema.Struct({
   name: Schema.String,
   executed: Schema.Boolean.pipe(optional),
   native: Native.pipe(optional),
-  /** Result-side native data from a provider-executed tool; unlike `native`, it stays replayable across models of the same provider. */
-  nativeResult: Native.pipe(optional),
+  providerResultState: Native.pipe(optional),
   state: ToolState,
   time: Schema.Struct({
     created: DateTimeUtcFromMillis,

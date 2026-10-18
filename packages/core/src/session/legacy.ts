@@ -1,7 +1,7 @@
 export * as SessionLegacy from "./legacy.js"
 
 /**
- * Before v2.1, native data was stored as `state`, `providerState`, `providerResultState`, and `resultState`.
+ * Before v2.1, native data was stored as `state` or `providerState`.
  * Stored events and projected messages keep whichever shape they were written with; these upgrade them on read.
  */
 
@@ -10,8 +10,6 @@ const renames: Record<string, ReadonlyArray<readonly [string, string]>> = {
   "session.reasoning.started": [["state", "native"]],
   "session.reasoning.ended": [["state", "native"]],
   "session.tool.called": [["state", "native"]],
-  "session.tool.success": [["resultState", "nativeResult"]],
-  "session.tool.failed": [["resultState", "nativeResult"]],
   "session.step.ended": [["providerState", "native"]],
   "session.step.failed": [["providerState", "native"]],
   "session.compaction.ended": [["providerState", "native"]],
@@ -38,7 +36,7 @@ function part(value: unknown) {
   if (!isRecord(value)) return value
   if (value.type === "text" || value.type === "reasoning") return rename(value, "state", "native")
   if (value.type === "tool")
-    return rename(rename(value, "providerState", "native"), "providerResultState", "nativeResult")
+    return rename(value, "providerState", "native")
   return value
 }
 

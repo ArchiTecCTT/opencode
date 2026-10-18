@@ -3653,7 +3653,7 @@ describe("SessionRunnerLLM", () => {
               name: "web_search",
               executed: true,
               native: { source: "provider" },
-              nativeResult: { source: "provider" },
+              providerResultState: { source: "provider" },
             },
             {
               input: { query: "hello" },

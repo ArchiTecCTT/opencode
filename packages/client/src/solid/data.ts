@@ -1003,7 +1003,7 @@ export function createData(config: CreateDataInput) {
             content: [...event.data.content],
           }
           tool.executed = event.data.executed || tool.executed === true
-          tool.nativeResult = event.data.nativeResult
+          tool.providerResultState = event.data.resultState
           tool.time.completed = event.created
         })
         return
@@ -1018,7 +1018,7 @@ export function createData(config: CreateDataInput) {
             content: event.data.content,
           }
           tool.executed = event.data.executed || tool.executed === true
-          tool.nativeResult = event.data.nativeResult
+          tool.providerResultState = event.data.resultState
           tool.time.completed = event.created
         })
         return
