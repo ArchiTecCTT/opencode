@@ -4,7 +4,9 @@ import { SessionTitle } from "@opencode/core/session/title"
 import { SessionTransfer } from "@opencode/core/session/transfer"
 import { InstructionEntry } from "@opencode/core/session/instruction-entry"
 import { Form } from "@opencode/core/form"
-import { DateTime, Effect, Stream } from "effect"
+import { DateTime, Effect, Schema, Stream } from "effect"
+import { PublicSessionMessage } from "@opencode/protocol/groups/message"
+import { SessionLegacy } from "@opencode/schema/session-legacy"
 import { HttpApiBuilder, HttpApiSchema } from "effect/http-api"
 import { Api } from "../api"
 import {
@@ -24,6 +26,8 @@ import {
 import { AbsolutePath } from "@opencode/core/schema"
 import { locationErrors } from "../location"
 import { failedMessageDecode, failedSnapshot, missingMessage, missingSession } from "./session-error"
+
+const decodeImportedMessages = Schema.decodeUnknownEffect(Schema.Array(PublicSessionMessage))
 
 function missingForm(id: Form.ID) {
   return new FormNotFoundError({ id, message: `Form not found: ${id}` })
@@ -112,10 +116,13 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
       .handle(
         "session.import",
         Effect.fn(function* (ctx) {
+          const messages = yield* decodeImportedMessages(SessionLegacy.messages(ctx.payload.messages)).pipe(
+            Effect.mapError((error) => new InvalidRequestError({ message: error.message, field: "messages" })),
+          )
           return {
             data: yield* transfer
               .import({
-                data: { info: ctx.payload.info, messages: ctx.payload.messages },
+                data: { info: ctx.payload.info, messages },
                 location: ctx.payload.location ?? { directory: AbsolutePath.make(process.cwd()) },
               })
               .pipe(

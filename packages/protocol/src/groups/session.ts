@@ -164,17 +164,19 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
     .add(
       HttpApiEndpoint.post("session.import", "/api/experimental/session/import", {
         payload: Schema.Struct({
-          ...PublicSessionTransfer.fields,
+          info: PublicSessionTransfer.fields.info,
+          // Validated by the handler after upgrading messages exported by earlier releases.
+          messages: Schema.Array(Schema.Json),
           location: Location.PublicRef.pipe(Schema.optional),
         }),
         success: Schema.Struct({ data: PublicSessionInfo }),
-        error: [ConflictError, SessionNotFoundError],
+        error: [ConflictError, InvalidRequestError, SessionNotFoundError],
       }).annotateMerge(
         OpenApi.annotations({
           identifier: "experimental.session.import",
           summary: "Import session",
           description:
-            "Import a projected session transcript at the requested location. If parentID is supplied, the parent session must already exist; import parents before children.",
+            "Import a projected session transcript at the requested location. Accepts transcripts exported by earlier releases. If parentID is supplied, the parent session must already exist; import parents before children.",
         }),
       ),
     )

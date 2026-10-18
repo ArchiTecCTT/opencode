@@ -1317,7 +1317,7 @@
             }
           }
         },
-        "description": "Import a projected session transcript at the requested location. If parentID is supplied, the parent session must already exist; import parents before children.",
+        "description": "Import a projected session transcript at the requested location. Accepts transcripts exported by earlier releases. If parentID is supplied, the parent session must already exist; import parents before children.",
         "summary": "Import session",
         "requestBody": {
           "content": {
@@ -1329,10 +1329,7 @@
                     "$ref": "#/components/schemas/Session.Info"
                   },
                   "messages": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/Session.Message.Info"
-                    }
+                    "type": "array"
                   },
                   "location": {
                     "anyOf": [

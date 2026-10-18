@@ -30,13 +30,9 @@ export function message(type: unknown, data: Record<string, unknown>) {
   return data
 }
 
-/** Upgrades an exported session (`SessionTransfer.Data`) before decoding. */
-export function transfer(value: unknown) {
-  if (!isRecord(value) || !Array.isArray(value.messages)) return value
-  return {
-    ...value,
-    messages: value.messages.map((item: unknown) => (isRecord(item) ? message(item.type, item) : item)),
-  }
+/** Upgrades complete messages, such as those in an exported session, before decoding. */
+export function messages(values: ReadonlyArray<unknown>) {
+  return values.map((value) => (isRecord(value) ? message(value.type, value) : value))
 }
 
 function content(data: Record<string, unknown>) {

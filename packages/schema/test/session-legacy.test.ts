@@ -87,7 +87,7 @@ describe("SessionLegacy", () => {
     })
   })
 
-  test("upgrades exported sessions before decoding", () => {
+  test("upgrades exported messages before decoding", () => {
     const message = {
       id: "msg_legacy",
       type: "assistant",
@@ -97,17 +97,16 @@ describe("SessionLegacy", () => {
       content: [textPart, { type: "reasoning", text: "thought", state: native }],
       time: { created: 0 },
     }
-    const info = { id: "ses_legacy" }
-    expect(SessionLegacy.transfer({ info, messages: [message] })).toEqual({
-      info,
-      messages: [SessionLegacy.message("assistant", message)],
-    })
-    expect(Schema.decodeUnknownSync(SessionMessage.Info)(SessionLegacy.message("assistant", message))).toMatchObject({
-      native,
-      content: [
-        { type: "text", native },
-        { type: "reasoning", native },
-      ],
-    })
+    expect(
+      Schema.decodeUnknownSync(Schema.Array(SessionMessage.Info))(SessionLegacy.messages([message])),
+    ).toMatchObject([
+      {
+        native,
+        content: [
+          { type: "text", native },
+          { type: "reasoning", native },
+        ],
+      },
+    ])
   })
 })

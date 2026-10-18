@@ -50,6 +50,58 @@ it.live("preserves imported parentID through HTTP import, read, and parent filte
     }).toEqual({ imported: parent.data.id, read: parent.data.id, children: [id] })
   }).pipe(Effect.scoped),
 )
+it.live("upgrades native data in transcripts exported before v2.1", () =>
+  Effect.gen(function* () {
+    const request = yield* setup
+    const template = Schema.decodeUnknownSync(SessionResponse)(yield* request("/api/session", {}))
+    const id = Session.ID.create()
+    yield* request("/api/experimental/session/import", {
+      info: { ...template.data, id },
+      messages: [
+        {
+          id: "msg_legacy",
+          type: "assistant",
+          agent: "build",
+          model: { providerID: "anthropic", id: "claude" },
+          providerState: { finish: "kept" },
+          content: [
+            { type: "text", text: "Answer", state: { signature: "text" } },
+            { type: "reasoning", text: "Thinking", state: { signature: "reasoning" } },
+          ],
+          time: { created: 1, completed: 2 },
+        },
+      ],
+    })
+    expect(yield* request(`/api/session/${id}/message`)).toMatchObject({
+      data: [
+        {
+          id: "msg_legacy",
+          native: { finish: "kept" },
+          content: [
+            { type: "text", native: { signature: "text" } },
+            { type: "reasoning", native: { signature: "reasoning" } },
+          ],
+        },
+      ],
+    })
+  }).pipe(Effect.scoped),
+)
+
+it.live("rejects an invalid imported message without creating the session", () =>
+  Effect.gen(function* () {
+    const request = yield* setup
+    const template = Schema.decodeUnknownSync(SessionResponse)(yield* request("/api/session", {}))
+    const id = Session.ID.create()
+    expect(
+      yield* request(
+        "/api/experimental/session/import",
+        { info: { ...template.data, id }, messages: [{ id: "msg_invalid", type: "assistant" }] },
+        400,
+      ),
+    ).toMatchObject({ _tag: "InvalidRequestError", field: "messages" })
+    expect(yield* request(`/api/session/${id}`, undefined, 404)).toMatchObject({ _tag: "SessionNotFoundError" })
+  }).pipe(Effect.scoped),
+)
 ;["missing", "self"].forEach((parent) => {
   it.live(`rejects a ${parent} parent without creating the imported session`, () =>
     Effect.gen(function* () {
